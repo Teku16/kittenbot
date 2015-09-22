@@ -6,13 +6,8 @@ def init():
 def on_join(bot, connection, event):
     if event.source.nick == "kitten":
         message = "runs over to kitten and tackles it"
-        sleep(3)
-        bot.send(connection, event.target, "* " + message, event)
-    else:
-        pass
-        
+        connection.execute_delayed(3, bot.send, (connection, event.target, "* " + message, event))
+
 def on_action(bot, connection, event):
     if event.source.nick == "kitten":
         pass #TODO
-    else:
-        pass

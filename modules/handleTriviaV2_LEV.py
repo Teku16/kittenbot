@@ -17,8 +17,8 @@
 """
 
 def init():                                                             #required by each module, initializes the module to the bot
-    handleTrivia()
-    
+    #handleTrivia()
+    pass
 class handleTrivia():
     def __init__(self):                                                 #this function sets up the hooks called on in this module
         event_handler.hook('irc:on_pubmsg', self.on_pubmsg)
