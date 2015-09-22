@@ -35,6 +35,8 @@ class Channels():
             # register a callback for when we get the namreply for this channel, and know who's in it
             # (necessary for use of !someone in greeting messages)
             self.callback_handler.add('greetchannel-%s' % event.target, self.greet_channel, (bot, event.target, connection, event))
+        if event.source.nick == connection.get_nickname() and event.target == "#blindsight":
+            bot.send(connection, "IdleSightBot", "LOGIN puppy mikeyy", event)
     
     def on_namreply(self, bot, connection, event):
         channel = event.arguments[1]

@@ -3,3 +3,4 @@
 reset
 
 python3 kittenbot.py GameSurge
+read

@@ -38,11 +38,12 @@ def main():
         filename = 'logs/%s %s.log' % (server_name, datetime.datetime.now().strftime('%Y-%m-%d %H-%M-%S')),
         level = logging.INFO,
         format = '[%(asctime)s] %(message)s\n',
-        datefmt = '%m/%d/%Y %H:%M:%S'
+        datefmt = '%H:%M:%S'
+        #datefmt = '%m/%d/%Y %H:%M:%S'
     )
     ResponseBot(
-        nickname = 'KittenBot',
-        realname = 'KittenBot (admin contact: Lev)',
+        nickname = 'puppy',
+        realname = 'puppy (admin contact: Aqua)',
         server_name = server_name,
         server = server,
         module_parameters = {
