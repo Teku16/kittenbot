@@ -171,10 +171,12 @@ class handleTrivia():
         self.question_num += 1
         connection.execute_delayed(2, self.askQuestion, (bot, connection, event))
         self.answer = ''
+        self.possible_letters = []
     
     def timesUp(self, question_num, bot, connection, event):
         if self.question_num == question_num and self.questionLoopRunning:
             self.num_unanswered += 1
+            self.possible_letters = []
             if not self.num_unanswered > 2:
                 bot.send(connection, event.target, "Oops! Nobody guessed it. The answer was '%s'... Here comes the next question!" % str(self.answer), event)
                 connection.execute_delayed(3, self.askQuestion, (bot, connection, event))
@@ -184,30 +186,22 @@ class handleTrivia():
     def handleHints(self, answer, num_hletters, bot, connection, event):
         if not self.questionLoopRunning:
             return
-        
-        if num_hletters == 1:
+            
+        try:
             if num_hletters > len(answer):
                 num_hletters = len(answer)
             
-            self.possible_letters = random.sample(range(len(answer)), num_hletters)
+            for i in range(len(answer)):
+                if i not in self.possible_letters:
+                    self.possible_letters += random.sample(range(len(answer)), num_hletters)
+                else:
+                    
+            print(self.possible_letters) #debug
             hint = ''.join(i in self.possible_letters and answer[i] or '-' for i in range(len(answer)))
-            bot.send(connection, event.target, "[Hint #%s/3]: %s" % (num_hletters, hint), event)
-            return self.possible_letters
+            bot.send(connection, event.target, "[Hint #%s/3]: %s" % (num_hletters, hint), event) #fix the lame format later :3
+                
+        except BaseException as e:
+            error = 'handleHints hit an exception: %s: %s' % (key, type(e).__name__, e)
+            logging.exception(error)
+            print(error)
             
-        if num_hletters == 2:
-            if num_hletters > len(answer):
-                num_hletters = len(answer)
-                
-            self.possible_letters.extend(random.sample(range(len(answer)), num_hletters))
-            hint = ''.join(i in self.possible_letters and answer[i] or '-' for i in range(len(answer)))
-            bot.send(connection, event.target, "[Hint #%s/3]: %s" % (num_hletters, hint), event)
-            return self.possible_letters
-        
-        if num_hletters == 3:
-            if num_hletters > len(answer):
-                num_hletters = len(answer)
-                
-            self.possible_letters.extend(random.sample(range(len(answer)), num_hletters))
-            hint = ''.join(i in self.possible_letters and answer[i] or '-' for i in range(len(answer)))
-            bot.send(connection, event.target, "[Hint #%s/3]: %s" % (num_hletters, hint), event)
-            return self.possible_letters
