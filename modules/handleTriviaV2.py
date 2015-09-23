@@ -157,22 +157,23 @@ class handleTrivia():
         question = QA_string[0]
         self.answer = QA_string[1] #needs to be self to be accessed in other functions
 
-        q_message = ("Question [#%s/%d]: %s" % (q_number + 1, total_questions_num, question.capitalize()))
+        q_message = ("Question [#%s/%d]: %s" % (q_number + 1, total_questions_num, question))
         bot.send(connection, event.target, q_message, event)
         
+        self.lookingforHint = True
         connection.execute_delayed(20, self.timesUp, (self.question_num, bot, connection, event))
-        connection.execute_delayed(5, self.handleHints, (self.answer, 1, bot, connection, event))
-        connection.execute_delayed(10, self.handleHints, (self.answer, 2, bot, connection, event))
-        connection.execute_delayed(15, self.handleHints, (self.answer, 3, bot, connection, event))
+        connection.execute_delayed(5, self.handleHints, (self.answer, self.question_num, 1, bot, connection, event))
+        connection.execute_delayed(10, self.handleHints, (self.answer, self.question_num, 2, bot, connection, event))
+        connection.execute_delayed(15, self.handleHints, (self.answer, self.question_num, 3, bot, connection, event))
         
     def correctAnswer(self, bot, connection, event):
         self.num_unanswered = 0
+        self.possible_letters = []
         bot.send(connection, event.target, "Hooray! %s was correct! The answer was '%s'." % (event.source.nick, str(self.answer)), event)
         self.question_num += 1
         connection.execute_delayed(2, self.askQuestion, (bot, connection, event))
         self.answer = ''
-        self.possible_letters = []
-    
+        
     def timesUp(self, question_num, bot, connection, event):
         if self.question_num == question_num and self.questionLoopRunning:
             self.num_unanswered += 1
@@ -183,32 +184,27 @@ class handleTrivia():
             else:
                 self.a_stopTrivia(bot, connection, event)
 
-    def handleHints(self, answer, num_hletters, bot, connection, event):
-        if not self.questionLoopRunning:
+    def handleHints(self, answer, question_num, num_hletters, bot, connection, event):
+        if self.question_num != question_num or not self.questionLoopRunning:
             return
             
         try:
             if num_hletters > len(answer):
                 num_hletters = len(answer)
-                
+    #CLEAR VARS
             unused = []
             new_possible = []
-            
-            for i in range(len(answer)): #this runs from 0 through answer length, trying each #
-                
-                unused = [i for i in range(len(answer)) if i not in self.possible_letters]
-                print("unused:" + str(unused)) #debug
-                new_possible = random.sample(unused, num_hletters)
-                print("new_possible:" + str(new_possible)) #debug
-                self.possible_letters.extend(new_possible)
-                print("self.possible_letters:" + str(self.possible_letters)) #debug
-                break
-            #print("self.possible_letters:" + str(self.possible_letters)) #debug
+    #SET VARS
+            unused = [i for i in range(len(answer)) if i not in self.possible_letters]
+            new_possible = random.sample(unused, num_hletters)
+            self.possible_letters.extend(new_possible)
+    #DEBUG
+            print("unused:" + str(unused)) #debug
+            print("new_possible:" + str(new_possible)) #debug
+            print("self.possible_letters:" + str(self.possible_letters)) #debug
             hint = ''.join(i in self.possible_letters and answer[i] or '-' for i in range(len(answer)))
             bot.send(connection, event.target, "[Hint #%s/3]: %s" % (num_hletters, hint), event) #fix the lame format later :3
                 
         except BaseException as e:
             error = 'handleHints hit an exception: %s' % type(e).__name__, e
-            #logging.exception(error)
             print(error)
-            
