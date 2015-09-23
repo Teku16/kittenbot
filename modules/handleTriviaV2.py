@@ -28,6 +28,7 @@ class handleTrivia():
         event_handler.hook('irc:on_pubmsg', self.on_pubmsg)
         self.question_num = 0
         self.num_unanswered = 0
+        self.possible_letters = []
         self.questionLoopRunning = False
         self.resetInProgress = False
     
@@ -36,17 +37,17 @@ class handleTrivia():
             return
     #START
         if event.arguments[0].startswith("!trivia"):
-            print("got to start") #debug
+            #print("got to start") #debug
             self.trivia_starter = event.source.nick
             self.startTrivia(bot, connection, event)
     #STOP
         elif event.arguments[0].startswith("!stop"):
-            print("got to stop") #debug
+            #print("got to stop") #debug
             self.trivia_stopper = event.source.nick
             self.stopTrivia(bot, connection, event)
     #CORRECT
         elif self.questionLoopRunning:
-            print("got to correct") #debug
+            #print("got to correct") #debug
             self.usermessage = event.arguments[0]
             if self.usermessage.lower().strip() == self.answer.lower().strip():
                 self.correctAnswer(bot, connection, event)
@@ -54,7 +55,7 @@ class handleTrivia():
         elif not self.questionLoopRunning and not self.resetInProgress:
     #RESET
             if event.arguments[0].startswith('!resetTrivia'):
-                print("got to reset") #debug
+                #print("got to reset") #debug
                 if event.source.nick == bot.db.get('botOwner'):
                     self.trivia_resetter = event.source.nick
                     self.resetInProgress = True
@@ -62,7 +63,7 @@ class handleTrivia():
                     bot.send(connection, event.target, confirmation, event)
     #ADD
             if event.arguments[0].startswith('!addQ'):
-                print("got to add") #debug
+                #print("got to add") #debug
                 if event.source.nick in bot.db.get_all('triviaAdmin'):
                     if len(event.arguments[0].split(' ', 1)) <= 1:
                         bot.send(connection, event.target, "Sorry %s, you didn't tell me anything to add!" % event.source.nick, event)
@@ -72,7 +73,7 @@ class handleTrivia():
                         bot.send(connection, event.target, "Okay, %s, I'll add that to the database!" % event.source.nick, event)
     #REMOVE
             if event.arguments[0].startswith('!remQ'):
-                print ("got to remove") #debug
+                #print ("got to remove") #debug
                 if event.source.nick in bot.db.get_all('triviaAdmin'):
                     if len(event.arguments[0].split(' ', 1)) <= 1:
                         bot.send(connection, event.target, "Sorry %s, you didn't tell me anything to remove!" % event.source.nick, event)
@@ -87,7 +88,7 @@ class handleTrivia():
                             
     #CONFIRM
         elif self.resetInProgress == True and self.trivia_resetter in event.source.nick:
-            print("got to confirm") #debug
+            #print("got to confirm") #debug
             if event.source.nick == self.trivia_resetter:
             
                 if event.arguments[0].lower().startswith('!yes'):
@@ -159,10 +160,10 @@ class handleTrivia():
         q_message = ("Question [#%s/%d]: %s" % (q_number + 1, total_questions_num, question.capitalize()))
         bot.send(connection, event.target, q_message, event)
         
-        connection.execute_delayed(40, self.timesUp, (self.question_num, bot, connection, event))
-        connection.execute_delayed(10, self.handleHints, (1, bot, connection, event))
-        connection.execute_delayed(20, self.handleHints, (2, bot, connection, event))
-        connection.execute_delayed(30, self.handleHints, (3, bot, connection, event))
+        connection.execute_delayed(20, self.timesUp, (self.question_num, bot, connection, event))
+        connection.execute_delayed(5, self.handleHints, (self.answer, 1, bot, connection, event))
+        connection.execute_delayed(10, self.handleHints, (self.answer, 2, bot, connection, event))
+        connection.execute_delayed(15, self.handleHints, (self.answer, 3, bot, connection, event))
         
     def correctAnswer(self, bot, connection, event):
         self.num_unanswered = 0
@@ -180,16 +181,33 @@ class handleTrivia():
             else:
                 self.a_stopTrivia(bot, connection, event)
 
-    def handleHints(self, hintNum, bot, connection, event):
+    def handleHints(self, answer, num_hletters, bot, connection, event):
         if not self.questionLoopRunning:
             return
         
-        elif hintNum == 1:
-            hint1 = self.answer.replace(self.answer[1::1], "-", 99)
-            bot.send(connection, event.target, "[Hint]: %s" % hint1, event)
-        elif hintNum == 2:
-            hint2 = self.answer.replace(self.answer[1:-1:1], "-", 99)
-            bot.send(connection, event.target, "[Hint]: %s" % hint2, event)
-        elif hintNum == 3:
-            hint3 = self.answer.replace(self.answer[1::2], "-", 99)
-            bot.send(connection, event.target, "[Hint]: %s" % hint3, event)
+        if num_hletters == 1:
+            if num_hletters > len(answer):
+                num_hletters = len(answer)
+            
+            self.possible_letters = random.sample(range(len(answer)), num_hletters)
+            hint = ''.join(i in self.possible_letters and answer[i] or '-' for i in range(len(answer)))
+            bot.send(connection, event.target, "[Hint #%s/3]: %s" % (num_hletters, hint), event)
+            return self.possible_letters
+            
+        if num_hletters == 2:
+            if num_hletters > len(answer):
+                num_hletters = len(answer)
+                
+            self.possible_letters.extend(random.sample(range(len(answer)), num_hletters))
+            hint = ''.join(i in self.possible_letters and answer[i] or '-' for i in range(len(answer)))
+            bot.send(connection, event.target, "[Hint #%s/3]: %s" % (num_hletters, hint), event)
+            return self.possible_letters
+        
+        if num_hletters == 3:
+            if num_hletters > len(answer):
+                num_hletters = len(answer)
+                
+            self.possible_letters.extend(random.sample(range(len(answer)), num_hletters))
+            hint = ''.join(i in self.possible_letters and answer[i] or '-' for i in range(len(answer)))
+            bot.send(connection, event.target, "[Hint #%s/3]: %s" % (num_hletters, hint), event)
+            return self.possible_letters
