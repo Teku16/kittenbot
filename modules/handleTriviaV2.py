@@ -190,18 +190,25 @@ class handleTrivia():
         try:
             if num_hletters > len(answer):
                 num_hletters = len(answer)
+                
+            unused = []
+            new_possible = []
             
-            for i in range(len(answer)):
-                if i not in self.possible_letters:
-                    self.possible_letters += random.sample(range(len(answer)), num_hletters)
-                else:
-                    
-            print(self.possible_letters) #debug
+            for i in range(len(answer)): #this runs from 0 through answer length, trying each #
+                
+                unused = [i for i in range(len(answer)) if i not in self.possible_letters]
+                print("unused:" + str(unused)) #debug
+                new_possible = random.sample(unused, num_hletters)
+                print("new_possible:" + str(new_possible)) #debug
+                self.possible_letters.extend(new_possible)
+                print("self.possible_letters:" + str(self.possible_letters)) #debug
+                break
+            #print("self.possible_letters:" + str(self.possible_letters)) #debug
             hint = ''.join(i in self.possible_letters and answer[i] or '-' for i in range(len(answer)))
             bot.send(connection, event.target, "[Hint #%s/3]: %s" % (num_hletters, hint), event) #fix the lame format later :3
                 
         except BaseException as e:
-            error = 'handleHints hit an exception: %s: %s' % (key, type(e).__name__, e)
-            logging.exception(error)
+            error = 'handleHints hit an exception: %s' % type(e).__name__, e
+            #logging.exception(error)
             print(error)
             
