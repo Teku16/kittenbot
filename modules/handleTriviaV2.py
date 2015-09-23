@@ -32,7 +32,7 @@ class handleTrivia():
         self.resetInProgress = False
     
     def on_pubmsg(self, bot, connection, event):
-        if event.target != "#squadchat":
+        if event.target not in ("#squadchat", "#puppy"):
             return
     #START
         if event.arguments[0].startswith("!trivia"):
@@ -184,9 +184,12 @@ class handleTrivia():
         if not self.questionLoopRunning:
             return
         
-        elif self.hintNum == 1:
-            stuff
-        elif self.hintNum == 2:
-            stuff
-        elif self.hintNum == 3:
-            stuff
+        elif hintNum == 1:
+            hint1 = self.answer.replace(self.answer[1::1], "-", 99)
+            bot.send(connection, event.target, "[Hint]: %s" % hint1, event)
+        elif hintNum == 2:
+            hint2 = self.answer.replace(self.answer[1:-1:1], "-", 99)
+            bot.send(connection, event.target, "[Hint]: %s" % hint2, event)
+        elif hintNum == 3:
+            hint3 = self.answer.replace(self.answer[1::2], "-", 99)
+            bot.send(connection, event.target, "[Hint]: %s" % hint3, event)
