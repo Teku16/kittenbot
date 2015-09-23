@@ -61,6 +61,9 @@ class ModuleHandler():
     def _load_module_list(self, list, first_time):
         loaded_modules = []
         for module in list:
+            if module.endswith('__init__'):
+                continue
+        
             if module in sys.modules:
                 module = sys.modules[module]
                 importfunc = reload_func
