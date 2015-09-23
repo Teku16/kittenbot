@@ -159,7 +159,10 @@ class handleTrivia():
         q_message = ("Question [#%s/%d]: %s" % (q_number + 1, total_questions_num, question.capitalize()))
         bot.send(connection, event.target, q_message, event)
         
-        connection.execute_delayed(5, self.timesUp, (self.question_num, bot, connection, event))
+        connection.execute_delayed(40, self.timesUp, (self.question_num, bot, connection, event))
+        connection.execute_delayed(10, self.handleHints, (1, bot, connection, event))
+        connection.execute_delayed(20, self.handleHints, (2, bot, connection, event))
+        connection.execute_delayed(30, self.handleHints, (3, bot, connection, event))
         
     def correctAnswer(self, bot, connection, event):
         self.num_unanswered = 0
@@ -176,3 +179,14 @@ class handleTrivia():
                 connection.execute_delayed(3, self.askQuestion, (bot, connection, event))
             else:
                 self.a_stopTrivia(bot, connection, event)
+
+    def handleHints(self, hintNum, bot, connection, event):
+        if not self.questionLoopRunning:
+            return
+        
+        elif self.hintNum == 1:
+            stuff
+        elif self.hintNum == 2:
+            stuff
+        elif self.hintNum == 3:
+            stuff
