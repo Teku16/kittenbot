@@ -3,10 +3,10 @@
 #      https://github.com/Levtastic/kittenbot      #
 """
     TODO:
-        [-] better method of storing questions for when hints are implemented
-        [-] add hints, !hint commands
+        [-] [✔] add hints, [-] !hint command
         [-] full-staged question loops (hints, proper time)
-        [-] add a database for storing correct answers for nicks
+        [-] log nick's correct/false? answers
+        [-] maybe make hints reveal x per word rather than per string
     FINISHED:
         [✔] build base model
         [✔] listen for !trivia and !stoptrivia commands, make them function properly
@@ -17,14 +17,15 @@
         [✔] stop automatically after x unanswered questions
         [✔] add channel !commands to: [✔] reset, [✔] add, and [✔] remove trivia question database
         [✔] changed the need to write trivia_question = num/question/answer -- it gets the length of the DB list now
+        [✔] make handleHints notice spaces -- thanks Lev -- again! :D
 """
 import random
-def init():                                                             #required by each module, initializes the module to the bot
+def init(): #required by each module, initializes the module to the bot
     handleTrivia()
     
 class handleTrivia():
 
-    def __init__(self):                                                 #this function sets up the hooks called on in this module
+    def __init__(self): #this function sets up the hooks/attributes called on in this module
         event_handler.hook('irc:on_pubmsg', self.on_pubmsg)
         self.question_num = 0
         self.num_unanswered = 0
@@ -187,7 +188,7 @@ class handleTrivia():
     def handleHints(self, answer, question_num, num_hletters, bot, connection, event):
         if self.question_num != question_num or not self.questionLoopRunning:
             return
-            
+    #we need to make sure that the hint wont be longer than the answer
         try:
             if num_hletters > len(answer):
                 num_hletters = len(answer)
@@ -202,9 +203,10 @@ class handleTrivia():
             print("unused:" + str(unused)) #debug
             print("new_possible:" + str(new_possible)) #debug
             print("self.possible_letters:" + str(self.possible_letters)) #debug
-            hint = ''.join(i in self.possible_letters and answer[i] or '-' for i in range(len(answer)))
+    #BUILD & SEND
+            hint = ''.join([(i in self.possible_letters or answer[i] == ' ') and answer[i] or '-' for i in range(len(answer))])
             bot.send(connection, event.target, "[Hint #%s/3]: %s" % (num_hletters, hint), event) #fix the lame format later :3
-                
+    #IF FAIL
         except BaseException as e:
             error = 'handleHints hit an exception: %s' % type(e).__name__, e
             print(error)
