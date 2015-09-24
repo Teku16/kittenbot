@@ -8,6 +8,8 @@
         [-] log nick's correct/false? answers
         [-] maybe make hints reveal x per word rather than per string
         [-] make hints reveal more if len(answer) > x
+        [-] stop genHints from trying to reveal a ' ' -- possibly if answer[i] == ' ': remove it from [unused] so it cannot be "revealed"
+        [-] transform a_stopTrivia into stopTrivia
     FINISHED:
         [✔] build base model
         [✔] listen for !trivia and !stoptrivia commands, make them function properly
@@ -28,7 +30,7 @@ class handleTrivia():
 
     def __init__(self): #this function sets up the hooks/attributes called on in this module
         event_handler.hook('irc:on_pubmsg', self.on_pubmsg)
-        self.question_num = 0
+        self.question_num = 1
         self.num_unanswered = 0
         self.possible_letters = []
         self.questionLoopRunning = False
@@ -120,15 +122,15 @@ class handleTrivia():
         bot.send(connection, event.target, started_message, event)
         
         self.questionLoopRunning = True
-        connection.execute_delayed(3, self.askQuestion, (bot, connection, event))
+        bot.execute_delayed(connection, 3, self.askQuestion, (bot, connection, event))
         
     def stopTrivia(self, bot, connection, event):
         if not self.questionLoopRunning:
             bot.send(connection, event.target, "Trivia is already stopped! Use !trivia to start it!", event)
             return
-            
         self.questionLoopRunning = False
         self.num_answered = 0
+        self.question_num = 0
         
         stopped_message = ("Trivia has been stopped by " + self.trivia_stopper + ". Type !trivia to start again!")
         bot.send(connection, event.target, stopped_message, event)
@@ -136,9 +138,9 @@ class handleTrivia():
     def a_stopTrivia(self, bot, connection, event):
         if not self.questionLoopRunning:
             return
-        
         self.questionLoopRunning = False
         self.num_answered = 0
+        self.question_num = 0
         bot.send(connection, event.target, "Oops! Nobody guessed it. That's three questions unanswered! Stopping trivia.", event)
         
     def askQuestion(self, bot, connection, event):
@@ -177,6 +179,7 @@ class handleTrivia():
         if self.question_num == question_num and self.questionLoopRunning:
             self.num_unanswered += 1
             self.possible_letters = []
+            self.question_num += 1
             if not self.num_unanswered > 2:
                 bot.send(connection, event.target, "Oops! Nobody guessed it. The answer was '%s'... Here comes the next question!" % str(self.answer), event)
                 connection.execute_delayed(3, self.askQuestion, (bot, connection, event))
@@ -186,6 +189,8 @@ class handleTrivia():
     def genHints(self, answer, question_num, bot, connection, event):
         if self.question_num != question_num or not self.questionLoopRunning:
             return
+        unused = []
+        self.possible_letters = []
         try:
             for x in range(1,4):
                 unused = [i for i in range(len(answer)) if i not in self.possible_letters] #       -----\
@@ -193,13 +198,12 @@ class handleTrivia():
                 time = x * 10 / 2                                                          #       -----/
                 hint = ''.join([(i in self.possible_letters or answer[i] == ' ') and answer[i] or '-' for i in range(len(answer))])       #GENERATE HINT
                 bot.execute_delayed(connection, time, self.sendHints, (question_num, connection, event.target, "[Hint #%s/3]: %s" % (x, hint), event))  #SEND HINT
-                
         except BaseException as e:
-            error = 'handleHints hit an exception: %s' % type(e).__name__, e
+            error = 'genHints hit an exception: %s' % type(e).__name__, e
             print(error)
             
     def sendHints(self, question_num, connection, target, message, event):
-        if self.question_num != question_num or not self.questionLoopRunning:
+        if question_num != self.question_num or not self.questionLoopRunning:
             return
-            
+        #print(str(self.question_num) + ", " + str(question_num)) #debug
         bot.send(connection, target, message, event)
