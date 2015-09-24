@@ -11,7 +11,6 @@
         [-] stop genHints from trying to reveal a ' ' -- possibly if answer[i] == ' ': remove it from [unused] so it cannot be "revealed"
         [-] ability to grab all possible messages from the bot DB
         [-] possibly move the timesUp timer from askQuestion to genHints...
-        [-] add !restoreTrivia to reinstall last DB.. before adding to it again -- for debugging
     FINISHED:
         [✔] build base model
         [✔] listen for !trivia and !stoptrivia commands, make them function properly
@@ -24,6 +23,8 @@
         [✔] changed the need to write trivia_question = num/question/answer -- it gets the length of the DB list now
         [✔] make handleHints notice spaces -- thanks Lev -- again! :D
         [✔] source a_stopTrivia into stopTrivia
+        [✔] make genHints act different with variation in len(answer)
+        [✔] added !restore and !backup for storing/pulling question database.
 """
 import random
 def init():             #required by each module, initializes the module to the bot
@@ -90,14 +91,36 @@ class handleTrivia():
                             bot.send(connection, event.target, "Sorry %s, the question '%s' does not exist in the database." % (event.source.nick, q_to_remove), event)
                         else:
                             bot.db.delete('trivia_question', q_to_remove)
-                            bot.send(connection, event.target, "Okay, %s, I'll remove that from the database!" % event.source.nick, event)                            
+                            bot.send(connection, event.target, "Okay, %s, I'll remove that from the database!" % event.source.nick, event)
+    #BACKUP
+            if event.arguments[0].startswith('!backup'):
+                #print ("got to backup") #debug
+                if event.source.nick in bot.db.get_all('triviaAdmin'):
+                    if len(bot.db.get_all('trivia_question')) < 1:
+                        bot.send(connection, event.target, "Oh no! There aren't any questions in the database.", event)
+                        return
+                    saveto = open('q_backup.txt', 'w')
+                    for question in bot.db.get_all('trivia_question'):
+                        saveto.write("%s\n" % question)
+                    bot.send(connection, event.target, "Successfully stored %s questions to backup file!" % len(bot.db.get_all('trivia_question')), event)
+    #RESTORE
+            if event.arguments[0].startswith('!restore'):
+                #print ("got to restore") #debug
+                if event.source.nick in bot.db.get_all('triviaAdmin'):
+                    if len(bot.db.get_all('trivia_question')) > 0:
+                        bot.send(connection, event.target, "I'm sorry %s, but I cannot restore questions unless the databse is empty!" % event.source.nick, event)
+                        return
+                    with open('q_backup.txt', 'r') as f:
+                        import_questions = [q.rstrip('\n') for q in f]
+                    for i in import_questions:
+                        bot.db.add('trivia_question', i)
+                    bot.send(connection, event.target, "Successfully restored %s questions to the DB!" % len(import_questions), event)
     #CONFIRM
         elif self.resetInProgress == True and self.trivia_resetter in event.source.nick:
             #print("got to confirm") #debug
             if event.source.nick == self.trivia_resetter:
             
                 if event.arguments[0].lower().startswith('!yes'):
-                    trivia_db = bot.db.get_all('trivia_question%')
                     bot.db.delete('trivia_question', override_check = True)
                     self.resetInProgress = False
                     bot.send(connection, event.target, "Successfully reset the trivia database!", event)
@@ -178,13 +201,21 @@ class handleTrivia():
             return 
         unused = []                 #clear this so that it doesnt create a huuuge list
         self.possible_letters = []  #^
+        if len(answer) <= 3:
+            maxnum = 1 
+        elif len(answer) <= 6 and len(answer) > 3:
+            maxnum = 2
+        elif len(answer) > 6:
+            maxnum = 3
+        elif len(answer) >= 15:
+            maxnum = 4
         try:
-            for x in range(1,4):                                                           #cycle through 1,2,3
+            for x in range(1,maxnum + 1):                                                 #cycle through 1,2,3
                 unused = [i for i in range(len(answer)) if i not in self.possible_letters] #cant explain this at 1:30am...
                 self.possible_letters.extend(random.sample(unused, x))                     #add some numbers into possible letters to reveal
                 time = x * 10 / 2                                                          #x = either 1,2,3, so we get 5,10,15
                 hint = ''.join([(i in self.possible_letters or answer[i] == ' ') and answer[i] or '-' for i in range(len(answer))])       #GENERATE HINT
-                bot.execute_delayed(connection, time, self.sendHints, (question_num, connection, event.target, "[Hint #%s/3]: %s" % (x, hint), event))  #SEND HINT
+                bot.execute_delayed(connection, time, self.sendHints, (question_num, connection, event.target, "[Hint #%s/%d]: %s" % (x, maxnum, hint), event))  #SEND HINT
         except BaseException as e:
             error = 'genHints hit an exception: %s' % type(e).__name__, e
             print(error)

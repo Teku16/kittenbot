@@ -1,3 +1,4 @@
 *.db
 __pycache__/
 memory.csv
+q_backup.txt
