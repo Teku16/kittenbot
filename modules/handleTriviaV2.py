@@ -7,6 +7,7 @@
         [-] full-staged question loops (hints, proper time)
         [-] log nick's correct/false? answers
         [-] maybe make hints reveal x per word rather than per string
+        [-] make hints reveal more if len(answer) > x
     FINISHED:
         [✔] build base model
         [✔] listen for !trivia and !stoptrivia commands, make them function properly
@@ -160,12 +161,9 @@ class handleTrivia():
 
         q_message = ("Question [#%s/%d]: %s" % (q_number + 1, total_questions_num, question))
         bot.send(connection, event.target, q_message, event)
-        
-        self.lookingforHint = True
-        connection.execute_delayed(20, self.timesUp, (self.question_num, bot, connection, event))
-        connection.execute_delayed(5, self.handleHints, (self.answer, self.question_num, 1, bot, connection, event))
-        connection.execute_delayed(10, self.handleHints, (self.answer, self.question_num, 2, bot, connection, event))
-        connection.execute_delayed(15, self.handleHints, (self.answer, self.question_num, 3, bot, connection, event))
+
+        bot.execute_delayed(connection, 20, self.timesUp, (self.question_num, bot, connection, event))
+        self.genHints(self.answer, self.question_num, bot, connection, event)
         
     def correctAnswer(self, bot, connection, event):
         self.num_unanswered = 0
@@ -207,6 +205,28 @@ class handleTrivia():
             hint = ''.join([(i in self.possible_letters or answer[i] == ' ') and answer[i] or '-' for i in range(len(answer))])
             bot.send(connection, event.target, "[Hint #%s/3]: %s" % (num_hletters, hint), event) #fix the lame format later :3
     #IF FAIL
+        except BaseException as e:
+            error = 'handleHints hit an exception: %s' % type(e).__name__, e
+            print(error)
+            
+    def genHints(self, answer, question_num, bot, connection, event):
+        if self.question_num != question_num or not self.questionLoopRunning:
+            return
+        try:
+            for x in range(1,4): #1,2,3
+            
+                unused = [i for i in range(len(answer)) if i not in self.possible_letters]
+                new_possible = random.sample(unused, x)
+                self.possible_letters.extend(new_possible)
+                time = x * 10 / 2
+        #DEBUG
+                print("unused:" + str(unused)) #debug
+                print("new_possible:" + str(new_possible)) #debug
+                print("self.possible_letters:" + str(self.possible_letters)) #debug
+                
+                hint = ''.join([(i in self.possible_letters or answer[i] == ' ') and answer[i] or '-' for i in range(len(answer))])
+                bot.execute_delayed(connection, time, bot.send, (connection, event.target, "[Hint #%s/3]: %s" % (x, hint), event))
+                
         except BaseException as e:
             error = 'handleHints hit an exception: %s' % type(e).__name__, e
             print(error)
