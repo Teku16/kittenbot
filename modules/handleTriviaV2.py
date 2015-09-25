@@ -6,25 +6,26 @@
         [-] [✔] add hints, [-] !hint command
         [-] full-staged question loops (hints, proper time)
         [-] log nick's correct/false? answers
-        [-] maybe make hints reveal x per word rather than per string
-        [-] make hints reveal more if len(answer) > x
+        [-] make hints reveal x per word rather than per string
         [-] stop genHints from trying to reveal a ' ' -- possibly if answer[i] == ' ': remove it from [unused] so it cannot be "revealed"
         [-] ability to grab all possible messages from the bot DB
-        [-] possibly move the timesUp timer from askQuestion to genHints...
+        [-] calculate timesUp send in a more intelligent way.. too tired
+        [-] condense if len(answer) checks in genHints... D:
     FINISHED:
         [✔] build base model
-        [✔] listen for !trivia and !stoptrivia commands, make them function properly
-        [✔] read database for questions
+        [✔] add !trivia, !stop
+        [✔] read DB for questions
         [✔] interpret total number of questions for "#[num/maxnum]" format
-        [✔] fix listening for answers -- thanks TheRandomDog and Lev!
-        [✔] make working & safe question loop that doenst crash the bot entirely -- thanks Lev!
+        [✔] fix listening for answers
+        [✔] make safe question loop that doenst crash the bot entirely -- thanks Lev!
         [✔] stop automatically after x unanswered questions
-        [✔] add channel !commands to: [✔] reset, [✔] add, and [✔] remove trivia question database
-        [✔] changed the need to write trivia_question = num/question/answer -- it gets the length of the DB list now
-        [✔] make handleHints notice spaces -- thanks Lev -- again! :D
-        [✔] source a_stopTrivia into stopTrivia
+        [✔] add channel !commands to: [✔] reset, [✔] add, and [✔] remove trivia database
+        [✔] no need to write trivia_question = num/question/answer -- it gets the length of the DB list now
+        [✔] make handleHints notice spaces -- thanks Lev
+        [✔] merge a_stopTrivia into stopTrivia
         [✔] make genHints act different with variation in len(answer)
         [✔] added !restore and !backup for storing/pulling question database.
+        [✔] call timesUp in a more intelligent/flexible manner in genHints
 """
 import random
 def init():             #required by each module, initializes the module to the bot
@@ -173,8 +174,6 @@ class handleTrivia():
 
         q_message = ("Question [#%s/%d]: %s" % (q_number + 1, total_questions_num, question))          #set the message string
         bot.send(connection, event.target, q_message, event)                                           #send the message string
-        
-        bot.execute_delayed(connection, 20, self.timesUp, (self.question_num, bot, connection, event)) #set a timesUp limit
         self.genHints(self.answer, self.question_num, bot, connection, event)                          #start the hint loop
         
     def correctAnswer(self, bot, connection, event):
@@ -203,19 +202,22 @@ class handleTrivia():
         self.possible_letters = []  #^
         if len(answer) <= 3:
             maxnum = 1 
-        elif len(answer) <= 6 and len(answer) > 3:
+        if len(answer) <= 6 and len(answer) > 3:
             maxnum = 2
-        elif len(answer) > 6:
+        if len(answer) > 6:
             maxnum = 3
-        elif len(answer) >= 15:
+        if len(answer) >= 15:
             maxnum = 4
         try:
-            for x in range(1,maxnum + 1):                                                 #cycle through 1,2,3
+            for x in range(1, maxnum + 1):                                                 #cycle through 1,2,3
                 unused = [i for i in range(len(answer)) if i not in self.possible_letters] #cant explain this at 1:30am...
                 self.possible_letters.extend(random.sample(unused, x))                     #add some numbers into possible letters to reveal
                 time = x * 10 / 2                                                          #x = either 1,2,3, so we get 5,10,15
                 hint = ''.join([(i in self.possible_letters or answer[i] == ' ') and answer[i] or '-' for i in range(len(answer))])       #GENERATE HINT
                 bot.execute_delayed(connection, time, self.sendHints, (question_num, connection, event.target, "[Hint #%s/%d]: %s" % (x, maxnum, hint), event))  #SEND HINT
+            else:
+                print(x)
+                bot.execute_delayed(connection, x * 10 / 2 + 5, self.timesUp, (self.question_num, bot, connection, event)) #after the loop of hint vars, init timesUp
         except BaseException as e:
             error = 'genHints hit an exception: %s' % type(e).__name__, e
             print(error)
