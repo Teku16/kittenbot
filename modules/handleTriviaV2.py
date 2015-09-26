@@ -8,13 +8,11 @@
         [-] log nick's correct/false? answers
         [-] make hints reveal x per word rather than per string
         [-] stop genHints from trying to reveal a ' ' -- possibly if answer[i] == ' ': remove it from [unused] so it cannot be "revealed"
-        [-] ability to grab all possible messages from the bot DB
+        [-] grab all possible messages from the bot DB
         [-] calculate timesUp send in a more intelligent way.. too tired
         [-] condense if len(answer) checks in genHints... D:
     FINISHED:
-        [✔] build base model
-        [✔] add !trivia, !stop
-        [✔] read DB for questions
+        [✔] build base model; add !trivia, !stop, read DB for questions
         [✔] interpret total number of questions for "#[num/maxnum]" format
         [✔] fix listening for answers
         [✔] make safe question loop that doenst crash the bot entirely -- thanks Lev!
@@ -202,11 +200,11 @@ class handleTrivia():
         self.possible_letters = []  #^
         if len(answer) <= 3:
             maxnum = 1 
-        if len(answer) <= 6 and len(answer) > 3:
+        elif len(answer) <= 6:
             maxnum = 2
-        if len(answer) > 6:
+        elif len(answer) < 15:
             maxnum = 3
-        if len(answer) >= 15:
+        else:
             maxnum = 4
         try:
             for x in range(1, maxnum + 1):                                                 #cycle through 1,2,3
