@@ -3,7 +3,7 @@
 #      https://github.com/Levtastic/kittenbot      #
 """
     TODO:
-        [-] display cogtypes, remaining, etc
+        [-] display [✔] cogtypes, [-] remaining, etc
         [-] return a message when there arent any invasions
         [-] have module interpret api data _properly_
     FINISHED:
@@ -26,22 +26,19 @@ class invasionHandler():
     #LIST INV
         if any(trigger in event.arguments[0] for trigger in self.triggers):
             self.returnInvasions(bot, connection, event)
+        if "is ttr up?" in event.arguments[0]:
+            self.serverStatus(bot, connection, event)
+            
+    def serverStatus(self, bot, connection, event):
+        pass #TODO
             
     def returnInvasions(self, bot, connection, event):
-        districts = []
-        invargs = []
-        stats = []
         raw_json = json.loads(r.urlopen("https://www.toontownrewritten.com/api/invasions").read().decode('utf-8'))
-
-        dist_str = ', '.join([a for a in raw_json['invasions']])
+        invasions = [a for a in raw_json['invasions']]
+        dist_str = ', '.join([a for a in invasions])
+        stuff = ([value['type'] for key, value in raw_json['invasions'].items()])
+        type_str = ', '.join([a for a in stuff])                    
         
-        # for a in invasions:
-            # districts += a
-            # for b in invasions[a]:
-                # invargs += b
-                # try:
-                    # for c in invasions[a][b]:
-                        # stats += c
-                # except:
-                    # pass
-        bot.send(connection, event.target, "Hey there %s, there are currently invasions in %s!" % (event.source.nick, dist_str), event)
+        inv_msg = ', '.join(['%s (%s)' % (key, value['type']) for key, value in raw_json['invasions'].items()])
+
+        bot.send(connection, event.target, "Hey there %s, the current invasions are: %s!" % (event.source.nick, inv_msg), event)
