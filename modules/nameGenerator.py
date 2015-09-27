@@ -22,10 +22,11 @@ class generateName():
     def __init__(self):
         event_handler.hook('irc:on_pubmsg', self.on_pubmsg)
         self.triggers = ['puppy what should I name my toon?', 'what should I name my toon?', 'puppy what should I name my toon', '!namegen']
+        self.workingChannels = ["#squadchat", "#puppy", "#Jasper"]
         self.generateLists()
     
     def on_pubmsg(self, bot, connection, event):
-        if event.target not in ("#squadchat", "#puppy"):
+        if event.target not in self.workingChannels:
             return
         if any(trigger in event.arguments[0] for trigger in self.triggers):
             self.generateName(bot, connection, event)

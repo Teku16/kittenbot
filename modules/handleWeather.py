@@ -21,9 +21,10 @@ class weatherHandler():
     def __init__(self):
         event_handler.hook('irc:on_pubmsg', self.on_pubmsg)
         self.triggers = ["puppy what is the weather like", "puppy what is the weather like?"]
+        self.workingChannels = ["#squadchat", "#puppy", "#Jasper"]
         
     def on_pubmsg(self, bot, connection, event):
-            if event.target not in ("#squadchat", "#puppy", "#Jasper"):
+            if event.target not in self.workingChannels:
                 return
     #LIST WEATHER
             if "!weather" in event.arguments[0]:
@@ -51,10 +52,12 @@ class weatherHandler():
             del a['code']
             del a['date']
             del a['day']
-        weather_msg = '; '.join(['%s: %s' % (key, value) for key, value in data['query']['results']['channel']['item']['forecast'][1].items()]).replace("text", "current condition")
+        forecast = data['query']['results']['channel']['item']['forecast']
+        weather_msg = '; '.join(['%s: %s' % (key, value) for key, value in forecast[1].items()]).replace("text", "condition")
         try:
-            city = data['query']['results']['channel']['location']['city']
-            state = data['query']['results']['channel']['location']['region']
+            city_state = data['query']['results']['channel']['location']
+            city = city_state['city']
+            state = city_state['region']
         except:
             print("could not get city/state data!")
-        bot.send(connection, event.target, "%s, the weather for %s, %s today is as follows: %s." % (event.source.nick, city, state, weather_msg), event)
+        bot.send(connection, event.target, "%s, the weather forecast for %s, %s today is as follows: %s." % (event.source.nick, city, state, weather_msg), event)
