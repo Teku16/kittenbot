@@ -41,7 +41,7 @@ class ResponseHandler():
         # responses get checked last - only do this if no other module had a use for the message
         event_handler.hook('messages:on_handle_messages', self.on_handle_message, 1000)
         
-        event_handler.hook('bot:on_process_message', self.on_process_message)
+        event_handler.hook('send:on_process_message', self.on_process_message)
         
         # create regex patterns for case insensitive replacing
         self.speaker_pattern = re.compile(re.escape('!speaker'), re.IGNORECASE)
@@ -56,6 +56,7 @@ class ResponseHandler():
     
     def on_handle_message(self, bot, connection, event, message, is_public, is_action, reply_target, auth_level):
         message_type_code = is_action and '*' or '-'
+        message = self.me_pattern.sub('', message)
         
         # Try to get a message as-is, then try swapping in aliases
         for name in [False, connection.get_nickname()] + bot.db.get_all('nick_alias'):

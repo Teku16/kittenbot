@@ -1,7 +1,9 @@
-Kitten IRC bot, built on the python irc framework (https://pypi.python.org/pypi/irc/11.1.1)
+Kitten IRC bot, built on the python irc framework (https://pypi.python.org/pypi/irc/13.1)
 
 Effort has been made to keep all kitten-like code in the database, and not in the actual bot code. The intention is for the bot to be easily re-used as any kind of response bot.
 
 Highly configurable through database values, and highly modular allowing new functionality to be bolted on.
 
 Basically a "my first irc bot" project, and also a "my first git repo" experience.
+
+There's a [wiki](https://github.com/Levtastic/kittenbot/wiki) detailing some of the nuts and bolts of the bot.
