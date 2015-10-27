@@ -4,28 +4,9 @@ def init():
     RandomActions()
 
 class RandomActions():
-    auth_commands = {
-        'runloop': 70,
-        'stoploop': 70,
-    }
-    command_descriptions = {
-        'runloop': """
-            Runs the random action loop
-            Note: Will fail if the loop is already running
-            Syntax: runloop
-        """,
-        'stoploop': """
-            Stops the random action loop
-            Note: Will fail if the loop is not running
-            Syntax: stoploop
-        """,
-    }
-    
     def __init__(self):
         self.run = True
         self.talked_last = []
-        
-        event_handler.hook('help:get_command_description', self.get_command_description)
         
         event_handler.hook('modulehandler:before_init_modules', self.on_before_init_modules)
         event_handler.hook('modulehandler:after_load_modules', self.on_after_load_modules)
@@ -33,16 +14,8 @@ class RandomActions():
         event_handler.hook('irc:on_part', self.on_leave)
         event_handler.hook('irc:on_kick', self.on_leave)
         event_handler.hook('irc:on_quit', self.on_leave)
-        event_handler.hook('irc:on_pubmsg', self.on_message, 250)
-        event_handler.hook('irc:on_action', self.on_message, 250)
+        event_handler.hook('messages:on_handle_messages', self.on_message, 0)
         event_handler.hook('send:on_after_send_message', self.on_after_send_message)
-        
-        event_handler.hook('commands:get_auth_commands', self.get_auth_commands)
-        event_handler.hook('commands:do_auth_command', self.do_auth_command)
-    
-    def get_command_description(self, bot, command):
-        if command in self.command_descriptions:
-            return self.command_descriptions[command]
     
     def on_before_init_modules(self, module_handler, bot, event_handler, first_time):
         # we're about to be replaced!
@@ -89,36 +62,14 @@ class RandomActions():
         if event.source.nick == connection.get_nickname() and event.target in self.talked_last:
             self.talked_last.remove(event.target)
     
-    def on_message(self, bot, connection, event):
+    def on_message(self, bot, connection, event, message, is_public, is_action, reply_target, auth_level):
         # we just got a message! We're no longer the last person to talk here
         if event.target in self.talked_last:
             self.talked_last.remove(event.target)
+        
+        return False
     
     def on_after_send_message(self, bot, connection, target, message, event, sent_by_module):
         # we just talked in this channel - we don't want to be the next to talk (responsebots are shy) so we record this for later
         if target[0] == '#' and target not in self.talked_last:
             self.talked_last.append(target)
-    
-    def get_auth_commands(self, bot):
-        return self.auth_commands
-    
-    def do_auth_command(self, bot, connection, event, command, parameters, reply_target, auth_level):
-        if command not in self.auth_commands:
-            return False # not for us
-        
-        if command == 'runloop':
-            if self.run:
-                return False
-            
-            self.run = True
-            self.random_messages_loop(bot)
-            bot.send(connection, reply_target, bot.db.get_random('yes'), event)
-            return True
-        
-        elif command == 'stoploop':
-            if not self.run:
-                return False
-            
-            self.run = False
-            bot.send(connection, reply_target, bot.db.get_random('yes'), event)
-            return True
