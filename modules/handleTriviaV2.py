@@ -33,6 +33,7 @@ class handleTrivia():
 
     def __init__(self): #this function sets up the hooks/attributes called on in this module
         event_handler.hook('irc:on_pubmsg', self.on_pubmsg)
+        self.answer = ''
         self.question_num = 1
         self.num_unanswered = 0
         self.possible_letters = []

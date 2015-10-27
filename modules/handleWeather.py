@@ -21,19 +21,18 @@ class weatherHandler():
     def __init__(self):
         event_handler.hook('irc:on_pubmsg', self.on_pubmsg)
         self.triggers = ["puppy what is the weather like", "puppy what is the weather like?"]
-        self.workingChannels = ["#squadchat", "#puppy", "#Jasper"]
+        self.workingChannels = ["#squadchat", "#puppy", "#Jasper", "#Noah"]
         
     def on_pubmsg(self, bot, connection, event):
             if event.target not in self.workingChannels:
                 return
     #LIST WEATHER
-            if "!weather" in event.arguments[0]:
+            if event.arguments[0].startswith("!weather"):
                 if event.arguments[0] == "!weather":
                     bot.send(connection, event.target, "Silly %s! You need to tell me where you want weather for!" % event.source.nick, event)
                     return
                 location = event.arguments[0].split(" ", 1)[1]
                 self.returnWeather(location.strip(), bot, connection, event)
-                return
             try:
                 trigger, location = event.arguments[0].split("in")
                 if trigger.strip() in self.triggers:
@@ -48,6 +47,9 @@ class weatherHandler():
         yql_url = baseurl + urllib.parse.urlencode({'q':yql_query}) + "&format=json"
         result = urllib.request.urlopen(yql_url).read().decode('utf-8')
         data = json.loads(result)
+        if not data['query']['results']:
+            bot.send(connection, event.target, "Sorry %s, I could not find information for '%s'..." % (event.source.nick, location))
+            return
         for a in data['query']['results']['channel']['item']['forecast']:
             del a['code']
             del a['date']
@@ -58,6 +60,7 @@ class weatherHandler():
             city_state = data['query']['results']['channel']['location']
             city = city_state['city']
             state = city_state['region']
+            country = city_state['country']
         except:
             print("could not get city/state data!")
         bot.send(connection, event.target, "%s, the weather forecast for %s, %s today is as follows: %s." % (event.source.nick, city, state, weather_msg), event)
