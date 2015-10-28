@@ -45,15 +45,15 @@ class Choose():
                     return False
             
             message_template = bot.db.get('choice_reply_template', default_value = '%(choice)s')
-            choice_val = message_template % {'choice': bot.db.get(', '.join(a for a in options)) if bot.db.check_exists(', '.join(a for a in options)) else random.choice(options)}
+            choice_val = bot.db.get('choice_' + ', '.join(a for a in options)) if bot.db.check_exists('choice_' + ', '.join(a for a in options)) else random.choice(options)
             
-            if not bot.db.check_exists(', '.join(a for a in options)):
-                bot.db.add(', '.join(a for a in options), choice_val)
-                prev_choice = bot.db.get(', '.join(a for a in options), choice_val)
+            if not bot.db.check_exists('choice_' + ', '.join(a for a in options).lower()):
+                bot.db.add('choice_' + ', '.join(a for a in options).lower(), choice_val.lower())
+                prev_choice = bot.db.get('choice_' + ', '.join(a for a in options), choice_val).lower()
             else:
-                prev_choice = bot.db.get(', '.join(a for a in options), choice_val)
+                prev_choice = bot.db.get('choice_' + ', '.join(a for a in options), choice_val).lower()
             
-            bot.send(connection, reply_target, prev_choice, event)
+            bot.send(connection, reply_target, message_template % {'choice': prev_choice.capitalize()}, event)
             
             return True
     
